@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://digifocal.in/sitemap.xml
