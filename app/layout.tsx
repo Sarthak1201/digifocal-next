@@ -21,6 +21,7 @@ export const metadata: Metadata = {
   icons: { icon: "/Dlogo.jpg" },
   other: {
     "google-adsense-account": "ca-pub-5896545782309702",
+    "impact-site-verification": "f7e3cae6-3d83-48d8-b850-b86072c56c1e",
   },
   openGraph: {
     title: "Digifocal IT Solutions",
@@ -50,7 +51,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Google AdSense - loads once for the whole site */}
         <Script
           async
           strategy="afterInteractive"
