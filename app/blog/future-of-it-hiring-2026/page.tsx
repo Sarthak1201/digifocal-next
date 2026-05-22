@@ -2,31 +2,31 @@ import type { Metadata } from "next";
 import ClientPage from "./ClientPage";
 
 export const metadata: Metadata = {
-  title: "IT Companies in Thane & Mumbai Hiring Freshers in 2026 — Full List",
+  title: "Companies Hiring React Developers in Pune 2026 — Salary & Skills",
   description:
-    "A complete 2026 guide to IT companies, MNCs, and startups in Thane, Navi Mumbai, and Mumbai actively hiring tech freshers — Wagle Estate, Airoli Mindspace, Powai, and more.",
+    "Discover the top companies hiring React developers in Pune for 2026. Real data on average salaries, essential skills, top IT hubs like Hinjewadi and Kharadi, and how to clear interviews.",
   keywords: [
-    "IT companies in Thane hiring freshers",
-    "tech jobs Mumbai 2026",
-    "fresher IT jobs Navi Mumbai",
-    "Wagle Estate software jobs",
-    "Airoli Mindspace hiring",
+    "React developer jobs Pune",
+    "React JS salary Pune 2026",
+    "top IT companies Pune hiring React",
+    "Hinjewadi IT jobs",
+    "frontend developer skills",
   ],
-  alternates: { canonical: "/blog/mastering-the-ats-resume" },
+  alternates: { canonical: "/blog/future-of-it-hiring-2026" },
   openGraph: {
-    title: "IT Companies in Thane & Mumbai Hiring Freshers in 2026 — Full List",
+    title: "Companies Hiring React Developers in Pune 2026 — Salary & Skills",
     description:
-      "Where freshers are getting hired across Thane, Navi Mumbai, and Mumbai in 2026, plus the skills each hub values.",
-    url: "/blog/mastering-the-ats-resume",
+      "Top companies hiring React developers in Pune for 2026, with real salary data, in-demand skills, and interview prep.",
+    url: "/blog/future-of-it-hiring-2026",
     type: "article",
-    images: ["https://images.unsplash.com/photo-1577415124269-fc1140a69e91?auto=format&fit=crop&q=80&w=800"],
+    images: ["https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&q=80&w=800"],
   },
   twitter: {
     card: "summary_large_image",
-    title: "IT Companies in Thane & Mumbai Hiring Freshers in 2026 — Full List",
+    title: "Companies Hiring React Developers in Pune 2026 — Salary & Skills",
     description:
-      "Where freshers are getting hired across Thane, Navi Mumbai, and Mumbai in 2026.",
-    images: ["https://images.unsplash.com/photo-1577415124269-fc1140a69e91?auto=format&fit=crop&q=80&w=800"],
+      "Top companies hiring React developers in Pune for 2026, with real salary data and interview prep.",
+    images: ["https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&q=80&w=800"],
   },
 };
 

@@ -2,32 +2,31 @@ import type { Metadata } from "next";
 import ClientPage from "./ClientPage";
 
 export const metadata: Metadata = {
-  title: "ServiceNow Developer Interview Questions by Mumbai MNCs 2026",
+  title: "6-Month IT Contract Jobs Mumbai — Pay vs Full-Time CTC 2026",
   description:
-    "Prepare for your next technical round with the top ServiceNow Developer interview questions actually asked by major MNCs in Mumbai in 2026, with detailed answer keys.",
+    "Deciding between a 6-month IT contract and a full-time role in Mumbai? We break down the real in-hand pay differences, hidden tax costs, and career impacts for 2026.",
   keywords: [
-    "ServiceNow developer interview questions",
-    "ServiceNow scripting questions",
-    "Mumbai IT MNC interviews",
-    "GlideRecord",
-    "Business Rules",
-    "ServiceNow ITSM jobs",
+    "6 month IT contract jobs Mumbai",
+    "contract vs full time CTC India",
+    "IT contractor salary Mumbai",
+    "C2H jobs Mumbai",
+    "freelance tech jobs Mumbai",
   ],
-  alternates: { canonical: "/blog/ace-technical-interview-ai-era" },
+  alternates: { canonical: "/blog/contract-vs-full-time-tech-career" },
   openGraph: {
-    title: "ServiceNow Developer Interview Questions by Mumbai MNCs 2026",
+    title: "6-Month IT Contract Jobs Mumbai — Pay vs Full-Time CTC 2026",
     description:
-      "Top ServiceNow interview questions asked by Mumbai MNCs in 2026, with detailed answer keys for L2/L3 rounds.",
-    url: "/blog/ace-technical-interview-ai-era",
+      "Real in-hand pay, hidden tax costs, and career trade-offs of 6-month IT contracts vs full-time roles in Mumbai.",
+    url: "/blog/contract-vs-full-time-tech-career",
     type: "article",
-    images: ["https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=800"],
+    images: ["https://images.unsplash.com/photo-1554469384-e58fac16e23a?auto=format&fit=crop&q=80&w=800"],
   },
   twitter: {
     card: "summary_large_image",
-    title: "ServiceNow Developer Interview Questions by Mumbai MNCs 2026",
+    title: "6-Month IT Contract Jobs Mumbai — Pay vs Full-Time CTC 2026",
     description:
-      "Top ServiceNow interview questions asked by Mumbai MNCs in 2026, with answer keys.",
-    images: ["https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=800"],
+      "Real in-hand pay, hidden tax costs, and career trade-offs of contract vs full-time roles in Mumbai.",
+    images: ["https://images.unsplash.com/photo-1554469384-e58fac16e23a?auto=format&fit=crop&q=80&w=800"],
   },
 };
 

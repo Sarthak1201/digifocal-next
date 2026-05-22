@@ -2,31 +2,32 @@ import type { Metadata } from "next";
 import ClientPage from "./ClientPage";
 
 export const metadata: Metadata = {
-  title: "Companies Hiring React Developers in Pune 2026 — Salary & Skills",
+  title: "ServiceNow Developer Interview Questions by Mumbai MNCs 2026",
   description:
-    "Discover the top companies hiring React developers in Pune for 2026. Real data on average salaries, essential skills, top IT hubs like Hinjewadi and Kharadi, and how to clear interviews.",
+    "Prepare for your next technical round with the top ServiceNow Developer interview questions actually asked by major MNCs in Mumbai in 2026, with detailed answer keys.",
   keywords: [
-    "React developer jobs Pune",
-    "React JS salary Pune 2026",
-    "top IT companies Pune hiring React",
-    "Hinjewadi IT jobs",
-    "frontend developer skills",
+    "ServiceNow developer interview questions",
+    "ServiceNow scripting questions",
+    "Mumbai IT MNC interviews",
+    "GlideRecord",
+    "Business Rules",
+    "ServiceNow ITSM jobs",
   ],
-  alternates: { canonical: "/blog/future-of-it-hiring-2026" },
+  alternates: { canonical: "/blog/ace-technical-interview-ai-era" },
   openGraph: {
-    title: "Companies Hiring React Developers in Pune 2026 — Salary & Skills",
+    title: "ServiceNow Developer Interview Questions by Mumbai MNCs 2026",
     description:
-      "Top companies hiring React developers in Pune for 2026, with real salary data, in-demand skills, and interview prep.",
-    url: "/blog/future-of-it-hiring-2026",
+      "Top ServiceNow interview questions asked by Mumbai MNCs in 2026, with detailed answer keys for L2/L3 rounds.",
+    url: "/blog/ace-technical-interview-ai-era",
     type: "article",
-    images: ["https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&q=80&w=800"],
+    images: ["https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=800"],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Companies Hiring React Developers in Pune 2026 — Salary & Skills",
+    title: "ServiceNow Developer Interview Questions by Mumbai MNCs 2026",
     description:
-      "Top companies hiring React developers in Pune for 2026, with real salary data and interview prep.",
-    images: ["https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&q=80&w=800"],
+      "Top ServiceNow interview questions asked by Mumbai MNCs in 2026, with answer keys.",
+    images: ["https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=800"],
   },
 };
 

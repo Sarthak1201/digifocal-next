@@ -2,31 +2,31 @@ import type { Metadata } from "next";
 import ClientPage from "./ClientPage";
 
 export const metadata: Metadata = {
-  title: "6-Month IT Contract Jobs Mumbai — Pay vs Full-Time CTC 2026",
+  title: "Average IT Salary in Mumbai vs Pune vs Bangalore 2026 — Skill-wise Breakdown",
   description:
-    "Deciding between a 6-month IT contract and a full-time role in Mumbai? We break down the real in-hand pay differences, hidden tax costs, and career impacts for 2026.",
+    "A comprehensive skill-wise breakdown of average IT salaries in Mumbai, Pune, and Bangalore for 2026. Compare CTCs for React, DevOps, Full Stack, and FinTech roles, with cost-of-living context.",
   keywords: [
-    "6 month IT contract jobs Mumbai",
-    "contract vs full time CTC India",
-    "IT contractor salary Mumbai",
-    "C2H jobs Mumbai",
-    "freelance tech jobs Mumbai",
+    "Average IT salary Mumbai vs Pune vs Bangalore",
+    "tech salaries 2026 India",
+    "software engineer CTC comparison",
+    "React developer salary Bangalore",
+    "DevOps salary Pune",
   ],
-  alternates: { canonical: "/blog/contract-vs-full-time-tech-career" },
+  alternates: { canonical: "/blog/building-developer-portfolio" },
   openGraph: {
-    title: "6-Month IT Contract Jobs Mumbai — Pay vs Full-Time CTC 2026",
+    title: "Average IT Salary in Mumbai vs Pune vs Bangalore 2026 — Skill-wise Breakdown",
     description:
-      "Real in-hand pay, hidden tax costs, and career trade-offs of 6-month IT contracts vs full-time roles in Mumbai.",
-    url: "/blog/contract-vs-full-time-tech-career",
+      "Skill-wise IT salary comparison across Mumbai, Pune, and Bangalore for 2026, with cost-of-living context.",
+    url: "/blog/building-developer-portfolio",
     type: "article",
-    images: ["https://images.unsplash.com/photo-1554469384-e58fac16e23a?auto=format&fit=crop&q=80&w=800"],
+    images: ["https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&q=80&w=800"],
   },
   twitter: {
     card: "summary_large_image",
-    title: "6-Month IT Contract Jobs Mumbai — Pay vs Full-Time CTC 2026",
+    title: "Average IT Salary in Mumbai vs Pune vs Bangalore 2026",
     description:
-      "Real in-hand pay, hidden tax costs, and career trade-offs of contract vs full-time roles in Mumbai.",
-    images: ["https://images.unsplash.com/photo-1554469384-e58fac16e23a?auto=format&fit=crop&q=80&w=800"],
+      "Skill-wise IT salary comparison across Mumbai, Pune, and Bangalore for 2026.",
+    images: ["https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&q=80&w=800"],
   },
 };
 

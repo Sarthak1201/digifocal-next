@@ -2,31 +2,31 @@ import type { Metadata } from "next";
 import ClientPage from "./ClientPage";
 
 export const metadata: Metadata = {
-  title: "Average IT Salary in Mumbai vs Pune vs Bangalore 2026 — Skill-wise Breakdown",
+  title: "How to Get a 40% Hike When Switching IT Jobs in India — Real Numbers",
   description:
-    "A comprehensive skill-wise breakdown of average IT salaries in Mumbai, Pune, and Bangalore for 2026. Compare CTCs for React, DevOps, Full Stack, and FinTech roles, with cost-of-living context.",
+    "Actionable strategies and real salary numbers to negotiate a 40% or higher CTC hike when switching IT jobs in India in 2026.",
   keywords: [
-    "Average IT salary Mumbai vs Pune vs Bangalore",
-    "tech salaries 2026 India",
-    "software engineer CTC comparison",
-    "React developer salary Bangalore",
-    "DevOps salary Pune",
+    "40% hike switching IT jobs",
+    "IT salary hike India 2026",
+    "software engineer salary negotiation",
+    "job switch CTC increase",
+    "Indian tech salary trends",
   ],
-  alternates: { canonical: "/blog/building-developer-portfolio" },
+  alternates: { canonical: "/blog/soft-skills-hardest-requirement-tech" },
   openGraph: {
-    title: "Average IT Salary in Mumbai vs Pune vs Bangalore 2026 — Skill-wise Breakdown",
+    title: "How to Get a 40% Hike When Switching IT Jobs in India — Real Numbers",
     description:
-      "Skill-wise IT salary comparison across Mumbai, Pune, and Bangalore for 2026, with cost-of-living context.",
-    url: "/blog/building-developer-portfolio",
+      "Real numbers and negotiation strategies to secure a 40%+ CTC hike when switching IT jobs in India in 2026.",
+    url: "/blog/soft-skills-hardest-requirement-tech",
     type: "article",
-    images: ["https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&q=80&w=800"],
+    images: ["https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&q=80&w=800"],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Average IT Salary in Mumbai vs Pune vs Bangalore 2026",
+    title: "How to Get a 40% Hike When Switching IT Jobs in India — Real Numbers",
     description:
-      "Skill-wise IT salary comparison across Mumbai, Pune, and Bangalore for 2026.",
-    images: ["https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&q=80&w=800"],
+      "Real numbers and negotiation strategies to secure a 40%+ CTC hike in 2026.",
+    images: ["https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&q=80&w=800"],
   },
 };
 
