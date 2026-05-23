@@ -60,9 +60,6 @@ export default function RootLayout({
       </head>
       <body>
         <Providers>{children}</Providers>
-        <noscript>
-          <p>Please enable JavaScript to view the full Digifocal IT Solutions experience.</p>
-        </noscript>
       </body>
     </html>
   );
