@@ -15,7 +15,7 @@ export interface Job {
   title: string;
   location: string;
   city: string;
-  region: string; // addressRegion (state) — derived for Google Jobs
+  region: string;
   country: string;
   experience: string;
   employmentType: string;
@@ -26,62 +26,37 @@ export interface Job {
   isRemote: boolean;
 }
 
-// Map major Indian hubs to their state, so JobPosting.jobLocation can include
-// addressRegion (recommended by Google for Job listings).
 const CITY_TO_REGION: Record<string, string> = {
-  mumbai: "Maharashtra",
-  "navi mumbai": "Maharashtra",
-  thane: "Maharashtra",
-  pune: "Maharashtra",
-  nagpur: "Maharashtra",
-  nashik: "Maharashtra",
-  bangalore: "Karnataka",
-  bengaluru: "Karnataka",
-  hyderabad: "Telangana",
-  chennai: "Tamil Nadu",
-  delhi: "Delhi",
-  "new delhi": "Delhi",
-  gurgaon: "Haryana",
-  gurugram: "Haryana",
-  noida: "Uttar Pradesh",
-  kolkata: "West Bengal",
-  ahmedabad: "Gujarat",
-  jaipur: "Rajasthan",
-  kochi: "Kerala",
-  indore: "Madhya Pradesh",
+  mumbai: "Maharashtra", "navi mumbai": "Maharashtra", thane: "Maharashtra",
+  pune: "Maharashtra", nagpur: "Maharashtra", nashik: "Maharashtra",
+  bangalore: "Karnataka", bengaluru: "Karnataka", hyderabad: "Telangana",
+  chennai: "Tamil Nadu", delhi: "Delhi", "new delhi": "Delhi",
+  gurgaon: "Haryana", gurugram: "Haryana", noida: "Uttar Pradesh",
+  kolkata: "West Bengal", ahmedabad: "Gujarat", jaipur: "Rajasthan",
+  kochi: "Kerala", indore: "Madhya Pradesh",
 };
 
 function regionForCity(city: string): string {
   return CITY_TO_REGION[city.trim().toLowerCase()] || "";
 }
 
-// Normalize a date string to YYYY-MM-DD (ISO 8601) for datePosted / validThrough.
 function toIsoDate(value: string): string {
   const v = (value || "").trim();
   if (!v) return "";
   const d = new Date(v);
-  if (isNaN(d.getTime())) return v; // leave as-is if unparseable
+  if (isNaN(d.getTime())) return v;
   return d.toISOString().split("T")[0];
 }
 
 function parseRows(csvText: string): Job[] {
-  const results = Papa.parse(csvText, {
-    header: true,
-    skipEmptyLines: true,
-  });
-
+  const results = Papa.parse(csvText, { header: true, skipEmptyLines: true });
   const today = new Date();
 
   return (results.data as any[])
     .map((row) => {
-      const city = (row["city"] || row["City"] || row["Location"] || "")
-        .toString()
-        .trim();
-      const location = (row["Location"] || row["location"] || "")
-        .toString()
-        .trim();
+      const city = (row["city"] || row["City"] || row["Location"] || "").toString().trim();
+      const location = (row["Location"] || row["location"] || "").toString().trim();
       const isRemote = /remote/i.test(`${city} ${location}`);
-
       return {
         id: (row["Job ID"] || row["ID"] || row["id"] || "").toString().trim(),
         slug: (row["slug"] || row["Slug"] || "").toString().trim(),
@@ -90,53 +65,52 @@ function parseRows(csvText: string): Job[] {
         city,
         region: regionForCity(city),
         country: (row["country"] || row["Country"] || "IN").toString().trim(),
-        experience: (row["Experience"] || row["experience"] || "")
-          .toString()
-          .trim(),
-        employmentType: (row["employment_type"] || "FULL_TIME")
-          .toString()
-          .trim(),
-        postedDate: toIsoDate(
-          row["posted_date"] || new Date().toISOString().split("T")[0]
-        ),
+        experience: (row["Experience"] || row["experience"] || "").toString().trim(),
+        employmentType: (row["employment_type"] || "FULL_TIME").toString().trim(),
+        postedDate: toIsoDate(row["posted_date"] || new Date().toISOString().split("T")[0]),
         validThrough: toIsoDate(row["valid_through"] || ""),
         status: (row["Status"] || row["status"] || "").toString().trim(),
-        description: (
-          row["Job Description"] ||
-          row["Description"] ||
-          row["description"] ||
-          ""
-        ).toString(),
+        description: (row["Job Description"] || row["Description"] || row["description"] || "").toString(),
         isRemote,
       } as Job;
     })
     .filter((job) => {
       if (!job.id || !job.slug) return false;
       if (job.status.toLowerCase() !== "active") return false;
-      if (
-        job.validThrough &&
-        !isNaN(new Date(job.validThrough).getTime()) &&
-        new Date(job.validThrough) < today
-      )
-        return false;
+      if (job.validThrough && !isNaN(new Date(job.validThrough).getTime()) && new Date(job.validThrough) < today) return false;
       return true;
     });
 }
 
-// Fetch all active jobs on the server. Cached for 1 hour (ISR), so the Sheet
-// stays the single source of truth without hammering Google on every request.
-export async function getJobs(): Promise<Job[]> {
+async function fetchCsvOnce(timeoutMs: number): Promise<string | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(JOBS_CSV_URL, {
-      next: { revalidate: 3600 },
+      cache: "no-store",
+      signal: controller.signal,
+      headers: { "User-Agent": "DigifocalJobsBot/1.0" },
     });
-    if (!res.ok) return [];
-    const csvText = await res.text();
-    return parseRows(csvText);
+    if (!res.ok) {
+      console.error(`getJobs(): CSV fetch HTTP ${res.status}`);
+      return null;
+    }
+    return await res.text();
   } catch (err) {
-    console.error("getJobs() server fetch failed:", err);
-    return [];
+    console.error("getJobs(): CSV fetch error:", (err as Error).message);
+    return null;
+  } finally {
+    clearTimeout(timer);
   }
+}
+
+export async function getJobs(): Promise<Job[]> {
+  let csv = await fetchCsvOnce(10000);
+  if (!csv) csv = await fetchCsvOnce(10000);
+  if (!csv) return [];
+  const jobs = parseRows(csv);
+  console.log(`getJobs(): parsed ${jobs.length} active job(s)`);
+  return jobs;
 }
 
 export async function getJobBySlug(slug: string): Promise<Job | null> {

@@ -12,6 +12,11 @@ import { getJobs } from "@/lib/getJobs";
 
 const BASE = "https://digifocal.in";
 
+// Generate the sitemap fresh at request time so newly added job URLs appear
+// without waiting for a rebuild (and so a failed build-time fetch can't cache
+// an empty sitemap).
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 

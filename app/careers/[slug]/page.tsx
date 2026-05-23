@@ -5,18 +5,16 @@
 
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getJobBySlug, getJobs, type Job } from "@/lib/getJobs";
+import { getJobBySlug, type Job } from "@/lib/getJobs";
 import ClientPage from "./ClientPage";
 
 type Props = {
   params: { slug: string };
 };
 
-// Pre-build a page for every active job at build time (and ISR-refresh hourly).
-export async function generateStaticParams() {
-  const jobs = await getJobs();
-  return jobs.map((job) => ({ slug: job.slug }));
-}
+// Always render on the server at request time so the job + JobPosting JSON-LD
+// are fetched fresh from the Google Sheet (avoids empty build-time caching).
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const job = await getJobBySlug(params.slug);

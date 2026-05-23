@@ -7,6 +7,10 @@ import type { Metadata } from "next";
 import { getJobs } from "@/lib/getJobs";
 import ClientPage from "./ClientPage";
 
+// Always render on the server at request time so jobs are fetched fresh from
+// the Google Sheet (avoids an empty build-time fetch being cached).
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Careers",
   description:
