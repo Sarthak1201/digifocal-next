@@ -1,22 +1,21 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { Helmet } from "react-helmet-async";
 import { MapPin, Briefcase, Calendar, ArrowLeft, Clock } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { useJobs } from "@/hooks/useJobs";
+import type { Job } from "@/lib/getJobs";
 import { ApplicationModal } from "@/components/ApplicationModal";
 
 const ADSENSE_PUBLISHER_ID = "ca-pub-5896545782309702";
 const AD_SLOT_TOP = "XXXXXXXXXX";
 
-export default function JobDetail() {
-  const params = useParams() as { slug: string };
-  const slug = params.slug;
-  const router = useRouter();
-  const { jobs, isLoading } = useJobs();
+// initialJob is provided by the server component (page.tsx). We render it
+// immediately (no "Loading..." flash, and the visible content matches the
+// SSR JobPosting schema). useJobs() is still used to compute "similar" roles.
+export default function JobDetail({ initialJob }: { initialJob?: Job }) {
+  const { jobs } = useJobs();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // AdSense script is loaded globally in app/layout.tsx;
@@ -30,63 +29,28 @@ export default function JobDetail() {
     }
   }, []);
 
-  if (isLoading) {
-    return <Layout><div className="py-20 text-center text-gray-400">Loading...</div></Layout>;
-  }
+  // Prefer the server-provided job; fall back to the client list if needed.
+  const job =
+    initialJob || jobs.find((j) => j.slug === initialJob?.slug) || null;
 
-  const job = jobs.find((j) => j.slug === slug);
   if (!job) {
-    // Job not found (or expired) — bounce to careers list
-    if (typeof window !== "undefined") {
-      router.replace("/careers");
-    }
-    return null;
+    return (
+      <Layout>
+        <div className="py-20 text-center text-gray-400">Loading...</div>
+      </Layout>
+    );
   }
 
   const similarJobs = jobs
-    .filter((j) => j.id !== job.id && (j.city === job.city || j.experience === job.experience))
+    .filter(
+      (j) =>
+        j.id !== job.id &&
+        (j.city === job.city || j.experience === job.experience)
+    )
     .slice(0, 4);
-
-  const jobSchema: any = {
-    "@context": "https://schema.org/",
-    "@type": "JobPosting",
-    "title": job.title,
-    "description": job.description,
-    "identifier": {
-      "@type": "PropertyValue",
-      "name": "Digifocal IT Solutions",
-      "value": job.id,
-    },
-    "datePosted": job.postedDate,
-    "employmentType": job.employmentType,
-    "hiringOrganization": {
-      "@type": "Organization",
-      "name": "Digifocal IT Solutions",
-      "sameAs": "https://digifocal.in",
-      "logo": "https://digifocal.in/Digifocallogo.jpg",
-    },
-    "jobLocation": {
-      "@type": "Place",
-      "address": {
-        "@type": "PostalAddress",
-        "addressLocality": job.city,
-        "addressCountry": job.country,
-      },
-    },
-    "directApply": true,
-  };
-
-  if (job.validThrough) jobSchema.validThrough = job.validThrough;
 
   return (
     <Layout>
-      <Helmet>
-      <title>{`${job.title} in ${job.city} | DigiFocal Careers`}</title>
-        <meta name="description" content={job.description.slice(0, 160).replace(/\s+/g, " ").trim()} />
-        <link rel="canonical" href={`https://digifocal.in/careers/${job.slug}`} />
-        <script type="application/ld+json">{JSON.stringify(jobSchema)}</script>
-      </Helmet>
-
       <section className="py-12 bg-[#0a0a0a] border-b border-white/5">
         <div className="enterprise-container max-w-4xl">
           <nav className="text-sm text-gray-500 mb-6">

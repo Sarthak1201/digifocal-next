@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Helmet } from "react-helmet-async";
 import {
   MapPin, Briefcase, ArrowRight,
   FileText, Code, Users, ChevronDown
@@ -9,6 +8,7 @@ import {
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { useJobs } from "@/hooks/useJobs";
+import type { Job } from "@/lib/getJobs";
 import { ApplicationModal } from "@/components/ApplicationModal";
 
 const ADSENSE_PUBLISHER_ID = "ca-pub-5896545782309702";
@@ -34,9 +34,16 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
   );
 }
 
-export default function CareersList() {
-  const { jobs, isLoading } = useJobs();
+// initialJobs comes from the server component (page.tsx). We seed the list with
+// it so crawlers and users see real jobs immediately; useJobs() then keeps it
+// fresh on the client.
+export default function CareersList({ initialJobs = [] }: { initialJobs?: Job[] }) {
+  const { jobs: clientJobs, isLoading } = useJobs();
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Use client-fetched jobs once they arrive; otherwise show the server list.
+  const jobs = clientJobs.length > 0 ? clientJobs : initialJobs;
+  const showLoading = isLoading && initialJobs.length === 0;
 
   // AdSense load (Removed the manual .push() here because App.tsx handles it now, preventing double-push errors)
   useEffect(() => {
@@ -51,28 +58,8 @@ export default function CareersList() {
     }
   }, []);
 
-  const itemListSchema = {
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    "itemListElement": jobs.map((j, i) => ({
-      "@type": "ListItem",
-      "position": i + 1,
-      "url": `https://digifocal.in/careers/${j.slug}`,
-      "name": j.title,
-    })),
-  };
-
   return (
     <Layout>
-      <Helmet>
-        <title>{`Careers at Digifocal | Active IT Jobs in India`}</title>
-        <meta name="description" content={`Browse active IT job openings at DigiFocal IT Solutions. React, Java, ServiceNow, full-stack roles across Mumbai, Pune, Bangalore, Hyderabad. Apply directly online.`} />
-        <link rel="canonical" href="https://digifocal.in/careers" />
-        {jobs.length > 0 && (
-          <script type="application/ld+json">{JSON.stringify(itemListSchema)}</script>
-        )}
-      </Helmet>
-
       {/* Hero */}
       <section className="py-12 bg-[#624d3b]">
         <div className="enterprise-container">
@@ -101,10 +88,10 @@ export default function CareersList() {
         <div className="enterprise-container">
           <div className="flex items-baseline justify-between mb-10">
             <h2 className="text-3xl font-semibold text-white tracking-tight">Open Positions</h2>
-            {!isLoading && <span className="text-gray-500">{jobs.length} active</span>}
+            {!showLoading && <span className="text-gray-500">{jobs.length} active</span>}
           </div>
 
-          {isLoading ? (
+          {showLoading ? (
             <p className="text-gray-400">Loading jobs...</p>
           ) : jobs.length === 0 ? (
             <div className="bg-[#141414] border border-white/5 rounded-lg p-10 text-center">
