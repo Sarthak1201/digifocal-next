@@ -1,23 +1,11 @@
 // src/lib/getJobs.ts
 // SERVER-SIDE job fetcher. Runs on the server (no "use client").
-// Reads the Google Sheet as CSV so jobs + JobPosting JSON-LD render into the
-// SSR HTML that Googlebot / Google Jobs reads.
-//
-// Google can be finicky about server-side fetches of Sheets. To be robust we:
-//   1) send a real browser User-Agent (bot UAs get blocked),
-//   2) follow redirects,
-//   3) try multiple Google CSV endpoints until one returns real CSV.
+// Pulls jobs from a Google Apps Script that reads the Sheet inside Google and
+// returns JSON — this bypasses Google's IP block on direct Sheets CSV fetches
+// from cloud servers (Netlify runs on AWS Lambda which Google blocks).
 
-import Papa from "papaparse";
-
-const DOC_ID = "1HdTTvL8dv-1mIpHxiEBwtwUIPqjTetulg79wINmU_7A";
-
-// Tried in order. First one that returns valid CSV (not an HTML error) wins.
-const CSV_URLS = [
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1LXzKYZN9w2oEcAYHcmonYuGR42oSjE-CaLeIaEy-mSzTkPkw7pjw-ivMijwiLFMGSjz5rFFRDpiu/pub?output=csv",
-  `https://docs.google.com/spreadsheets/d/${DOC_ID}/export?format=csv&gid=0`,
-  `https://docs.google.com/spreadsheets/d/${DOC_ID}/gviz/tq?tqx=out:csv&gid=0`,
-];
+const JOBS_API_URL =
+  "https://script.google.com/macros/s/AKfycbyTzGjRxHYHsEYNQ31QWUi4k1_VaJu69hvME40qM34tw-utx-LJDns4y68R0NXLc_eu/exec";
 
 const BROWSER_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
@@ -50,23 +38,33 @@ const CITY_TO_REGION: Record<string, string> = {
 };
 
 function regionForCity(city: string): string {
-  return CITY_TO_REGION[city.trim().toLowerCase()] || "";
+  // city may be "Thane, Maharashtra" — take first part before comma
+  const base = city.split(",")[0].trim().toLowerCase();
+  return CITY_TO_REGION[base] || "";
 }
 
-function toIsoDate(value: string): string {
-  const v = (value || "").trim();
+function toIsoDate(value: any): string {
+  const v = (value ?? "").toString().trim();
   if (!v) return "";
   const d = new Date(v);
-  if (isNaN(d.getTime())) return v;
+  if (isNaN(d.getTime())) return "";
   return d.toISOString().split("T")[0];
 }
 
-function parseRows(csvText: string): Job[] {
-  const results = Papa.parse(csvText, { header: true, skipEmptyLines: true });
-  const today = new Date();
+// Normalise a raw sheet row: trim ALL key names so a column header with an
+// accidental trailing space ("city ") still maps correctly to "city".
+function normaliseRow(raw: any): any {
+  const out: any = {};
+  for (const key of Object.keys(raw)) {
+    out[key.trim()] = raw[key];
+  }
+  return out;
+}
 
-  return (results.data as any[])
-    .map((row) => {
+function mapRows(raw: any[]): Job[] {
+  return raw
+    .map((rawRow) => {
+      const row = normaliseRow(rawRow); // fix trailing-space column headers
       const city = (row["city"] || row["City"] || row["Location"] || "").toString().trim();
       const location = (row["Location"] || row["location"] || "").toString().trim();
       const isRemote = /remote/i.test(`${city} ${location}`);
@@ -80,54 +78,50 @@ function parseRows(csvText: string): Job[] {
         country: (row["country"] || row["Country"] || "IN").toString().trim(),
         experience: (row["Experience"] || row["experience"] || "").toString().trim(),
         employmentType: (row["employment_type"] || "FULL_TIME").toString().trim(),
-        postedDate: toIsoDate(row["posted_date"] || new Date().toISOString().split("T")[0]),
-        validThrough: toIsoDate(row["valid_through"] || ""),
+        postedDate: toIsoDate(row["posted_date"]) || new Date().toISOString().split("T")[0],
+        validThrough: toIsoDate(row["valid_through"]),
         status: (row["Status"] || row["status"] || "").toString().trim(),
         description: (row["Job Description"] || row["Description"] || row["description"] || "").toString(),
         isRemote,
       } as Job;
     })
     .filter((job) => {
+      // Must have an ID and slug to be usable
       if (!job.id || !job.slug) return false;
+      // Status = "active" (any case) is the SOLE visibility control.
+      // We intentionally skip the validThrough date filter because:
+      //   1. Apps Script returns real Date objects (parseable, often past),
+      //   2. the browser CSV version gets unparseable date strings (never filtered),
+      //   3. so the two would behave differently — Status is the source of truth.
+      // To expire a job: change its Status to anything other than "active".
       if (job.status.toLowerCase() !== "active") return false;
-      if (job.validThrough && !isNaN(new Date(job.validThrough).getTime()) && new Date(job.validThrough) < today) return false;
       return true;
     });
 }
 
-function looksLikeCsv(text: string): boolean {
-  if (!text) return false;
-  const head = text.slice(0, 200).toLowerCase();
-  // Reject Google's HTML error/sign-in pages.
-  if (head.includes("<html") || head.includes("<!doctype")) return false;
-  return text.includes(",");
-}
-
-async function fetchOnce(url: string, timeoutMs: number): Promise<string | null> {
+async function fetchJson(timeoutMs: number): Promise<any[] | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(url, {
+    const res = await fetch(JOBS_API_URL, {
       cache: "no-store",
       redirect: "follow",
       signal: controller.signal,
-      headers: {
-        "User-Agent": BROWSER_UA,
-        Accept: "text/csv,text/plain,*/*",
-      },
+      headers: { "User-Agent": BROWSER_UA, Accept: "application/json,*/*" },
     });
     if (!res.ok) {
-      console.error(`getJobs(): ${url} -> HTTP ${res.status}`);
+      console.error(`getJobs(): Apps Script HTTP ${res.status}`);
       return null;
     }
     const text = await res.text();
-    if (!looksLikeCsv(text)) {
-      console.error(`getJobs(): ${url} -> response was not CSV (got HTML/empty)`);
+    if (text.trimStart().startsWith("<")) {
+      console.error("getJobs(): Apps Script returned HTML — check deployment access = Anyone");
       return null;
     }
-    return text;
+    const data = JSON.parse(text);
+    return Array.isArray(data) ? data : [];
   } catch (err) {
-    console.error(`getJobs(): ${url} -> ${(err as Error).message}`);
+    console.error("getJobs(): fetch error:", (err as Error).message);
     return null;
   } finally {
     clearTimeout(timer);
@@ -135,18 +129,18 @@ async function fetchOnce(url: string, timeoutMs: number): Promise<string | null>
 }
 
 export async function getJobs(): Promise<Job[]> {
-  for (const url of CSV_URLS) {
-    const csv = await fetchOnce(url, 10000);
-    if (csv) {
-      const jobs = parseRows(csv);
-      console.log(`getJobs(): ${jobs.length} active job(s) via ${url.split("?")[0]}`);
-      if (jobs.length > 0) return jobs;
-      // CSV parsed but 0 active jobs — still return (sheet may genuinely be empty)
-      // but keep trying other endpoints in case this one returned a stale/blank tab.
-    }
+  let raw = await fetchJson(10000);
+  if (!raw) {
+    console.warn("getJobs(): retrying...");
+    raw = await fetchJson(10000);
   }
-  console.error("getJobs(): all CSV endpoints failed or returned no active jobs");
-  return [];
+  if (!raw) {
+    console.error("getJobs(): all attempts failed");
+    return [];
+  }
+  const jobs = mapRows(raw);
+  console.log(`getJobs(): ${jobs.length} active job(s) from Apps Script (total rows: ${raw.length})`);
+  return jobs;
 }
 
 export async function getJobBySlug(slug: string): Promise<Job | null> {
