@@ -1,14 +1,10 @@
 // src/lib/getJobs.ts
-// SERVER-SIDE job fetcher. Runs on the server (no "use client").
-// Pulls jobs from a Google Apps Script that reads the Sheet inside Google and
-// returns JSON — this bypasses Google's IP block on direct Sheets CSV fetches
-// from cloud servers (Netlify runs on AWS Lambda which Google blocks).
+// SERVER-SIDE job reader. Reads jobs from src/data/jobs.json which is bundled
+// at build time. Zero network calls, zero IP block issues, 100% reliable.
+// To update jobs: paste the latest JSON from your Apps Script /exec URL into
+// src/data/jobs.json, then git push. Netlify rebuilds with fresh data.
 
-const JOBS_API_URL =
-  "https://script.google.com/macros/s/AKfycbyTzGjRxHYHsEYNQ31QWUi4k1_VaJu69hvME40qM34tw-utx-LJDns4y68R0NXLc_eu/exec";
-
-const BROWSER_UA =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+import jobsRaw from "@/data/jobs.json";
 
 export interface Job {
   id: string;
@@ -38,7 +34,6 @@ const CITY_TO_REGION: Record<string, string> = {
 };
 
 function regionForCity(city: string): string {
-  // city may be "Thane, Maharashtra" — take first part before comma
   const base = city.split(",")[0].trim().toLowerCase();
   return CITY_TO_REGION[base] || "";
 }
@@ -51,20 +46,17 @@ function toIsoDate(value: any): string {
   return d.toISOString().split("T")[0];
 }
 
-// Normalise a raw sheet row: trim ALL key names so a column header with an
-// accidental trailing space ("city ") still maps correctly to "city".
+// Trim all column header keys (fixes trailing-space headers like "city ")
 function normaliseRow(raw: any): any {
   const out: any = {};
-  for (const key of Object.keys(raw)) {
-    out[key.trim()] = raw[key];
-  }
+  for (const key of Object.keys(raw)) out[key.trim()] = raw[key];
   return out;
 }
 
 function mapRows(raw: any[]): Job[] {
   return raw
     .map((rawRow) => {
-      const row = normaliseRow(rawRow); // fix trailing-space column headers
+      const row = normaliseRow(rawRow);
       const city = (row["city"] || row["City"] || row["Location"] || "").toString().trim();
       const location = (row["Location"] || row["location"] || "").toString().trim();
       const isRemote = /remote/i.test(`${city} ${location}`);
@@ -86,64 +78,18 @@ function mapRows(raw: any[]): Job[] {
       } as Job;
     })
     .filter((job) => {
-      // Must have an ID and slug to be usable
       if (!job.id || !job.slug) return false;
-      // Status = "active" (any case) is the SOLE visibility control.
-      // We intentionally skip the validThrough date filter because:
-      //   1. Apps Script returns real Date objects (parseable, often past),
-      //   2. the browser CSV version gets unparseable date strings (never filtered),
-      //   3. so the two would behave differently — Status is the source of truth.
-      // To expire a job: change its Status to anything other than "active".
+      // Status = "active" (any case) is the sole visibility control.
       if (job.status.toLowerCase() !== "active") return false;
       return true;
     });
 }
 
-async function fetchJson(timeoutMs: number): Promise<any[] | null> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(JOBS_API_URL, {
-      cache: "no-store",
-      redirect: "follow",
-      signal: controller.signal,
-      headers: { "User-Agent": BROWSER_UA, Accept: "application/json,*/*" },
-    });
-    if (!res.ok) {
-      console.error(`getJobs(): Apps Script HTTP ${res.status}`);
-      return null;
-    }
-    const text = await res.text();
-    if (text.trimStart().startsWith("<")) {
-      console.error("getJobs(): Apps Script returned HTML — check deployment access = Anyone");
-      return null;
-    }
-    const data = JSON.parse(text);
-    return Array.isArray(data) ? data : [];
-  } catch (err) {
-    console.error("getJobs(): fetch error:", (err as Error).message);
-    return null;
-  } finally {
-    clearTimeout(timer);
-  }
+// Jobs are read from the bundled JSON file — no network call needed.
+export function getJobs(): Job[] {
+  return mapRows(jobsRaw as any[]);
 }
 
-export async function getJobs(): Promise<Job[]> {
-  let raw = await fetchJson(10000);
-  if (!raw) {
-    console.warn("getJobs(): retrying...");
-    raw = await fetchJson(10000);
-  }
-  if (!raw) {
-    console.error("getJobs(): all attempts failed");
-    return [];
-  }
-  const jobs = mapRows(raw);
-  console.log(`getJobs(): ${jobs.length} active job(s) from Apps Script (total rows: ${raw.length})`);
-  return jobs;
-}
-
-export async function getJobBySlug(slug: string): Promise<Job | null> {
-  const jobs = await getJobs();
-  return jobs.find((j) => j.slug === slug) || null;
+export function getJobBySlug(slug: string): Job | null {
+  return getJobs().find((j) => j.slug === slug) || null;
 }
