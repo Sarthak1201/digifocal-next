@@ -1,4 +1,4 @@
-// app/careers/[slug]/page.tsx — SERVER COMPONENT (statically pre-rendered per job)
+// app/careers/[slug]/page.tsx — SERVER COMPONENT
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getJobs, getJobBySlug, type Job } from "@/lib/getJobs";
@@ -6,17 +6,19 @@ import ClientPage from "./ClientPage";
 
 type Props = { params: { slug: string } };
 
-// Pre-render a page for every job in jobs.json at build time.
-export function generateStaticParams() {
-  return getJobs().map((job) => ({ slug: job.slug }));
+// Regenerate at most every 10 minutes; allow new slugs on-demand.
+export const revalidate = 600;
+export const dynamicParams = true;
+
+// Pre-render pages for all jobs known at build time (from bundled jobs.json).
+export async function generateStaticParams() {
+  const jobs = await getJobs();
+  return jobs.map((job) => ({ slug: job.slug }));
 }
 
-export function generateMetadata({ params }: Props): Metadata {
-  const job = getJobBySlug(params.slug);
-  if (!job) return {
-    title: "Job Not Found | Careers",
-    robots: { index: false, follow: true },
-  };
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const job = await getJobBySlug(params.slug);
+  if (!job) return { title: "Job Not Found | Careers", robots: { index: false, follow: true } };
   const desc = job.description.replace(/\s+/g, " ").trim().slice(0, 160);
   return {
     title: `${job.title} in ${job.city} | Digifocal Careers`,
@@ -24,12 +26,11 @@ export function generateMetadata({ params }: Props): Metadata {
     alternates: { canonical: `/careers/${job.slug}` },
     openGraph: {
       title: `${job.title} in ${job.city} | Digifocal Careers`,
-      description: desc, url: `/careers/${job.slug}`,
-      type: "website", images: ["https://digifocal.in/Dlogo.png"],
+      description: desc, url: `/careers/${job.slug}`, type: "website",
+      images: ["https://digifocal.in/Dlogo.png"],
     },
     twitter: {
-      card: "summary_large_image",
-      title: `${job.title} in ${job.city}`,
+      card: "summary_large_image", title: `${job.title} in ${job.city}`,
       description: desc, images: ["https://digifocal.in/Dlogo.png"],
     },
   };
@@ -59,13 +60,12 @@ function buildJobPostingSchema(job: Job) {
   return schema;
 }
 
-export default function Page({ params }: Props) {
-  const job = getJobBySlug(params.slug);
+export default async function Page({ params }: Props) {
+  const job = await getJobBySlug(params.slug);
   if (!job) notFound();
 
   return (
     <>
-      {/* SSR JobPosting JSON-LD — this is what Google Jobs reads */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(buildJobPostingSchema(job)) }}

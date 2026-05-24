@@ -1,7 +1,10 @@
-// app/careers/page.tsx — SERVER COMPONENT (static, built at deploy time)
+// app/careers/page.tsx — SERVER COMPONENT
 import type { Metadata } from "next";
 import { getJobs } from "@/lib/getJobs";
 import ClientPage from "./ClientPage";
+
+// Regenerate at most every 10 minutes: picks up Sheet edits automatically.
+export const revalidate = 600;
 
 export const metadata: Metadata = {
   title: "Careers",
@@ -10,8 +13,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Careers",
     description: "Browse current IT openings at Digifocal IT Solutions across India. Apply online today.",
-    url: "/careers", type: "website",
-    images: ["https://digifocal.in/Dlogo.png"],
+    url: "/careers", type: "website", images: ["https://digifocal.in/Dlogo.png"],
   },
   twitter: {
     card: "summary_large_image", title: "Careers",
@@ -20,8 +22,8 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Page() {
-  const jobs = getJobs(); // reads bundled JSON — no network call
+export default async function Page() {
+  const jobs = await getJobs();
 
   const itemListSchema = {
     "@context": "https://schema.org",

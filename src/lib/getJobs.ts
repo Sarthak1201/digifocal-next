@@ -1,10 +1,17 @@
 // src/lib/getJobs.ts
-// SERVER-SIDE job reader. Reads jobs from src/data/jobs.json which is bundled
-// at build time. Zero network calls, zero IP block issues, 100% reliable.
-// To update jobs: paste the latest JSON from your Apps Script /exec URL into
-// src/data/jobs.json, then git push. Netlify rebuilds with fresh data.
+// 3-layer robust job loader:
+//   1) tries a fresh fetch from the Apps Script at runtime (live updates),
+//   2) falls back to src/data/jobs.json bundled at build time (never empty),
+//   3) jobs.json itself is refreshed at every deploy by scripts/fetch-jobs.mjs.
+// Result: jobs render no matter what — and update automatically.
 
-import jobsRaw from "@/data/jobs.json";
+import bundledJobs from "@/data/jobs.json";
+
+const APPS_SCRIPT_URL =
+  "https://script.google.com/macros/s/AKfycbyTzGjRxHYHsEYNQ31QWUi4k1_VaJu69hvME40qM34tw-utx-LJDns4y68R0NXLc_eu/exec";
+
+const BROWSER_UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
 export interface Job {
   id: string;
@@ -46,7 +53,6 @@ function toIsoDate(value: any): string {
   return d.toISOString().split("T")[0];
 }
 
-// Trim all column header keys (fixes trailing-space headers like "city ")
 function normaliseRow(raw: any): any {
   const out: any = {};
   for (const key of Object.keys(raw)) out[key.trim()] = raw[key];
@@ -79,17 +85,50 @@ function mapRows(raw: any[]): Job[] {
     })
     .filter((job) => {
       if (!job.id || !job.slug) return false;
-      // Status = "active" (any case) is the sole visibility control.
-      if (job.status.toLowerCase() !== "active") return false;
+      if (job.status.toLowerCase() !== "active") return false; // Status is the sole control
       return true;
     });
 }
 
-// Jobs are read from the bundled JSON file — no network call needed.
-export function getJobs(): Job[] {
-  return mapRows(jobsRaw as any[]);
+// Layer 1: best-effort fresh fetch at runtime.
+async function tryFreshFetch(): Promise<any[] | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 6000);
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      cache: "no-store",
+      redirect: "follow",
+      signal: controller.signal,
+      headers: { "User-Agent": BROWSER_UA, Accept: "application/json,*/*" },
+    });
+    if (!res.ok) return null;
+    const text = await res.text();
+    if (text.trimStart().startsWith("<")) return null;
+    const data = JSON.parse(text);
+    return Array.isArray(data) ? data : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
-export function getJobBySlug(slug: string): Job | null {
-  return getJobs().find((j) => j.slug === slug) || null;
+export async function getJobs(): Promise<Job[]> {
+  const fresh = await tryFreshFetch();
+  if (fresh && fresh.length > 0) {
+    const jobs = mapRows(fresh);
+    if (jobs.length > 0) {
+      console.log(`getJobs(): ${jobs.length} active job(s) [live fetch]`);
+      return jobs;
+    }
+  }
+  // Layer 2: bundled build-time data (refreshed each deploy by prebuild script)
+  const fallback = mapRows(bundledJobs as any[]);
+  console.log(`getJobs(): ${fallback.length} active job(s) [bundled fallback]`);
+  return fallback;
+}
+
+export async function getJobBySlug(slug: string): Promise<Job | null> {
+  const jobs = await getJobs();
+  return jobs.find((j) => j.slug === slug) || null;
 }
