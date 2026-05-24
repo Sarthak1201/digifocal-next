@@ -1,13 +1,26 @@
 // src/lib/getJobs.ts
 // SERVER-SIDE job fetcher. Runs on the server (no "use client").
-// Fetches the same Google Sheet CSV your useJobs() hook uses, but on the
-// server, so job data + JobPosting JSON-LD can be rendered into the SSR HTML
-// that Googlebot (and Google Jobs) reads.
+// Reads the Google Sheet as CSV so jobs + JobPosting JSON-LD render into the
+// SSR HTML that Googlebot / Google Jobs reads.
+//
+// Google can be finicky about server-side fetches of Sheets. To be robust we:
+//   1) send a real browser User-Agent (bot UAs get blocked),
+//   2) follow redirects,
+//   3) try multiple Google CSV endpoints until one returns real CSV.
 
 import Papa from "papaparse";
 
-const JOBS_CSV_URL =
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1LXzKYZN9w2oEcAYHcmonYuGR42oSjE-CaLeIaEy-mSzTkPkw7pjw-ivMijwiLFMGSjz5rFFRDpiu/pub?output=csv";
+const DOC_ID = "1HdTTvL8dv-1mIpHxiEBwtwUIPqjTetulg79wINmU_7A";
+
+// Tried in order. First one that returns valid CSV (not an HTML error) wins.
+const CSV_URLS = [
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1LXzKYZN9w2oEcAYHcmonYuGR42oSjE-CaLeIaEy-mSzTkPkw7pjw-ivMijwiLFMGSjz5rFFRDpiu/pub?output=csv",
+  `https://docs.google.com/spreadsheets/d/${DOC_ID}/export?format=csv&gid=0`,
+  `https://docs.google.com/spreadsheets/d/${DOC_ID}/gviz/tq?tqx=out:csv&gid=0`,
+];
+
+const BROWSER_UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
 export interface Job {
   id: string;
@@ -82,22 +95,39 @@ function parseRows(csvText: string): Job[] {
     });
 }
 
-async function fetchCsvOnce(timeoutMs: number): Promise<string | null> {
+function looksLikeCsv(text: string): boolean {
+  if (!text) return false;
+  const head = text.slice(0, 200).toLowerCase();
+  // Reject Google's HTML error/sign-in pages.
+  if (head.includes("<html") || head.includes("<!doctype")) return false;
+  return text.includes(",");
+}
+
+async function fetchOnce(url: string, timeoutMs: number): Promise<string | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(JOBS_CSV_URL, {
+    const res = await fetch(url, {
       cache: "no-store",
+      redirect: "follow",
       signal: controller.signal,
-      headers: { "User-Agent": "DigifocalJobsBot/1.0" },
+      headers: {
+        "User-Agent": BROWSER_UA,
+        Accept: "text/csv,text/plain,*/*",
+      },
     });
     if (!res.ok) {
-      console.error(`getJobs(): CSV fetch HTTP ${res.status}`);
+      console.error(`getJobs(): ${url} -> HTTP ${res.status}`);
       return null;
     }
-    return await res.text();
+    const text = await res.text();
+    if (!looksLikeCsv(text)) {
+      console.error(`getJobs(): ${url} -> response was not CSV (got HTML/empty)`);
+      return null;
+    }
+    return text;
   } catch (err) {
-    console.error("getJobs(): CSV fetch error:", (err as Error).message);
+    console.error(`getJobs(): ${url} -> ${(err as Error).message}`);
     return null;
   } finally {
     clearTimeout(timer);
@@ -105,12 +135,18 @@ async function fetchCsvOnce(timeoutMs: number): Promise<string | null> {
 }
 
 export async function getJobs(): Promise<Job[]> {
-  let csv = await fetchCsvOnce(10000);
-  if (!csv) csv = await fetchCsvOnce(10000);
-  if (!csv) return [];
-  const jobs = parseRows(csv);
-  console.log(`getJobs(): parsed ${jobs.length} active job(s)`);
-  return jobs;
+  for (const url of CSV_URLS) {
+    const csv = await fetchOnce(url, 10000);
+    if (csv) {
+      const jobs = parseRows(csv);
+      console.log(`getJobs(): ${jobs.length} active job(s) via ${url.split("?")[0]}`);
+      if (jobs.length > 0) return jobs;
+      // CSV parsed but 0 active jobs — still return (sheet may genuinely be empty)
+      // but keep trying other endpoints in case this one returned a stale/blank tab.
+    }
+  }
+  console.error("getJobs(): all CSV endpoints failed or returned no active jobs");
+  return [];
 }
 
 export async function getJobBySlug(slug: string): Promise<Job | null> {
