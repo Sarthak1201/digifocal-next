@@ -22,6 +22,7 @@ export const metadata: Metadata = {
   other: {
     "google-adsense-account": "ca-pub-5896545782309702",
     "impact-site-verification": "f7e3cae6-3d83-48d8-b850-b86072c56c1e",
+    "google-site-verification": "39XDSqfDULYD2h5hkUxAwj0-SlPqFWv_xF8N357jVPI",
   },
   openGraph: {
     title: "Digifocal IT Solutions",
