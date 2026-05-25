@@ -7,7 +7,6 @@ import {
 } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { useJobs } from "@/hooks/useJobs";
 import type { Job } from "@/lib/getJobs";
 import { ApplicationModal } from "@/components/ApplicationModal";
 
@@ -34,18 +33,18 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
   );
 }
 
-// initialJobs comes from the server component (page.tsx). We seed the list with
-// it so crawlers and users see real jobs immediately; useJobs() then keeps it
-// fresh on the client.
+// initialJobs comes from the server component (page.tsx). The server already
+// refetches fresh data every 10 minutes (revalidate=600), so we render it
+// directly. We intentionally do NOT re-fetch on the client, because the
+// published-CSV source was returning a partial list (10 of 19) and overriding
+// the correct server list, causing the jobs to flicker from 19 down to 10.
 export default function CareersList({ initialJobs = [] }: { initialJobs?: Job[] }) {
-  const { jobs: clientJobs, isLoading } = useJobs();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Use client-fetched jobs once they arrive; otherwise show the server list.
-  const jobs = clientJobs.length > 0 ? clientJobs : initialJobs;
-  const showLoading = isLoading && initialJobs.length === 0;
+  // Single source of truth: the server-rendered job list.
+  const jobs = initialJobs;
 
-  // AdSense load (Removed the manual .push() here because App.tsx handles it now, preventing double-push errors)
+  // AdSense load (App.tsx handles the .push(), this just injects the script)
   useEffect(() => {
     const scriptId = "google-adsense-script";
     if (!document.getElementById(scriptId)) {
@@ -88,12 +87,10 @@ export default function CareersList({ initialJobs = [] }: { initialJobs?: Job[] 
         <div className="enterprise-container">
           <div className="flex items-baseline justify-between mb-10">
             <h2 className="text-3xl font-semibold text-white tracking-tight">Open Positions</h2>
-            {!showLoading && <span className="text-gray-500">{jobs.length} active</span>}
+            <span className="text-gray-500">{jobs.length} active</span>
           </div>
 
-          {showLoading ? (
-            <p className="text-gray-400">Loading jobs...</p>
-          ) : jobs.length === 0 ? (
+          {jobs.length === 0 ? (
             <div className="bg-[#141414] border border-white/5 rounded-lg p-10 text-center">
               <p className="text-gray-400 text-lg">No active openings right now.</p>
               <p className="text-gray-500 mt-2">Submit your resume to our talent pool below and we'll reach out when something matches.</p>
@@ -160,7 +157,7 @@ export default function CareersList({ initialJobs = [] }: { initialJobs?: Job[] 
           <article className="prose prose-invert max-w-none text-gray-400 bg-[#141414] border border-white/5 p-8 rounded-lg">
             <h2 className="text-2xl font-semibold text-white mb-4">IT Talent Acquisition & Open Roles</h2>
             <p className="mb-4 text-base leading-relaxed">
-              Digifocal IT Solutions specializes in connecting elite technical professionals with top-tier corporate opportunities. We are actively recruiting for specialized roles including React Developers, Full-Stack Engineers, Cloud Architects, and ServiceNow Consultants across major tech hubs like Mumbai, Pune, and Thane. 
+              Digifocal IT Solutions specializes in connecting elite technical professionals with top-tier corporate opportunities. We are actively recruiting for specialized roles including React Developers, Full-Stack Engineers, Cloud Architects, and ServiceNow Consultants across major tech hubs like Mumbai, Pune, and Thane.
             </p>
             <p className="text-base leading-relaxed">
               Our comprehensive talent acquisition pipeline ensures that whether you are seeking high-paying IT contract jobs or permanent placements in enterprise software environments, your profile reaches the right decision-makers. Explore our current inventory of technical vacancies above.
